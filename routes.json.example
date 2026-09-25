@@ -1,0 +1,14 @@
+{
+  "routes": [
+    {
+      "pattern": "*.example.com",
+      "providers": ["webshare", "proxyrack"],
+      "strategy": "priority_fallback"
+    },
+    {
+      "pattern": "*",
+      "providers": ["rayobyte"],
+      "strategy": "round_robin"
+    }
+  ]
+}

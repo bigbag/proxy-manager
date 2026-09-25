@@ -1,0 +1,9 @@
+.worktrees/
+.env
+.local_env
+routes.json
+providers.json
+bin/
+*.db
+*.db-shm
+*.db-wal
