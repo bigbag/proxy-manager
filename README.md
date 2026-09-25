@@ -130,4 +130,4 @@ The close run samples `503` responses. Each client starts another CONNECT before
 
 Enable the local Git hook with `git config core.hooksPath .githooks`. Each commit runs `go run github.com/securego/gosec/v2/cmd/gosec@v2.29.0 ./...`. Run `make security` to scan without a commit. GitHub Actions runs race tests, a build, and the same scan on pushes and pull requests.
 
-See [docs/architecture.md](docs/architecture.md) for services, routing, health, storage, and API contracts.
+See [docs/architecture.md](docs/architecture.md) for services, routing, health, storage, and API contracts. See [docs/development.md](docs/development.md) for tests, CI, and extension points. See [docs/deployment.md](docs/deployment.md) for topologies, permissions, and shutdown.
