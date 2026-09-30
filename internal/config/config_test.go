@@ -55,6 +55,9 @@ func TestLoadDefaultsAndValidation(t *testing.T) {
 		{"PROXY_PORT", "65536"},
 		{"PROXY_MAX_CONNECTIONS", "0"},
 		{"PROXY_CONNECT_TIMEOUT", "0"},
+		{"PROXY_IDLE_TIMEOUT", "0"},
+		{"PROXY_IDLE_TIMEOUT", "-1"},
+		{"PROXY_IDLE_TIMEOUT", "invalid"},
 		{"PROXY_AFFINITY_TTL", "-1"},
 		{"HEALTH_FAILURE_THRESHOLD", "0"},
 	} {

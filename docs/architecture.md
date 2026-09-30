@@ -13,7 +13,7 @@ The `proxy_manager` binary provides these commands:
 
 The proxy, API, and continuous refresher run until a signal stops them. Start one refresher per shared Redis instance. Multiple proxy nodes can share that Redis instance. Use SQLite with one node and one local file. The API and proxy processes can open the same local SQLite file on that node. The service checks the store connection before it starts a listener.
 
-The service reads `STORE`, `REDIS_URL`, `SQLITE_PATH`, `ROUTES_CONFIG_PATH`, `PROVIDERS_CONFIG_PATH`, `LOG_LEVEL`, `PROXY_HOST`, `PROXY_PORT`, `PROXY_CONNECT_TIMEOUT`, `PROXY_BUFFER_SIZE`, `PROXY_AFFINITY_TTL`, `PROXY_MAX_CONNECTIONS`, `API_HOST`, `API_PORT`, `HEALTH_FAILURE_THRESHOLD`, and `HEALTH_COOLDOWN_SECONDS`. The defaults appear in [README.md](../README.md).
+The service reads `STORE`, `REDIS_URL`, `SQLITE_PATH`, `ROUTES_CONFIG_PATH`, `PROVIDERS_CONFIG_PATH`, `LOG_LEVEL`, `PROXY_HOST`, `PROXY_PORT`, `PROXY_CONNECT_TIMEOUT`, `PROXY_IDLE_TIMEOUT`, `PROXY_BUFFER_SIZE`, `PROXY_AFFINITY_TTL`, `PROXY_MAX_CONNECTIONS`, `API_HOST`, `API_PORT`, `HEALTH_FAILURE_THRESHOLD`, and `HEALTH_COOLDOWN_SECONDS`. The defaults appear in [README.md](../README.md).
 
 The Makefile loads `.local_env` for the proxy, API, and refresh targets when the file exists. `LOCAL_ENV_FILE` selects another file. Direct binary commands read the process environment and the provider JSON file.
 
@@ -43,7 +43,7 @@ The service selects only proxies in the matched route. It sorts healthy proxies 
 
 The client can send `X-Proxy-Affinity` with at most 256 bytes. An empty key or `PROXY_AFFINITY_TTL=0` disables affinity. A valid bind uses a proxy that exists, belongs to the route, and is healthy. A missing or invalid bind selects the first healthy proxy by route provider order and proxy ID. If none is healthy, it selects the first available proxy by that order. The service stores or refreshes a bind only after the upstream accepts CONNECT and the client receives `200`. Concurrent bind writes use the last successful write.
 
-When affinity is enabled, the service retries once with a different available proxy after a failure before a valid upstream HTTP response. It does not retry without affinity, after an upstream HTTP response, or after it sends the client `200`. A missing alternative or a second failure returns `502`. An upstream non-200 HTTP status goes to the client without a retry.
+The service retries once with a different available proxy after a failure before a valid upstream HTTP response. This applies with or without affinity. Both attempts use the original `PROXY_CONNECT_TIMEOUT` deadline. The service does not retry after an upstream HTTP response or after it sends the client `200`. A missing alternative, an expired handshake deadline, or a second failure returns `502`. An upstream non-200 HTTP status goes to the client without a retry.
 
 ## CONNECT and health
 
@@ -60,7 +60,7 @@ The client sends CONNECT to the service over plain TCP. An observer on this leg 
 
 For an upstream non-200 response, the service copies the HTTP status and at most 1 MiB of decoded body data. It removes the upstream body-length framing and closes the client response.
 
-The service starts a tunnel only after it receives an upstream `200`. It copies data in both directions with half-close support. It has no tunnel idle timeout. Shutdown stops admission, closes active sockets, and waits for handlers. An upstream connection or tunnel failure increments that proxy's health failure count. An upstream HTTP error status or client disconnect does not mark that proxy unhealthy. After `HEALTH_FAILURE_THRESHOLD` consecutive upstream failures, the store marks the proxy unhealthy for `HEALTH_COOLDOWN_SECONDS`. A successful tunnel resets consecutive health failures.
+The service starts a tunnel only after it receives an upstream `200`. It copies data in both directions with half-close support. `PROXY_IDLE_TIMEOUT` limits tunnel inactivity in seconds. It defaults to `300` and must be positive. Traffic in either direction resets the timeout. Expiration closes both sockets and releases the connection slot. Shutdown stops admission, closes active sockets, and waits for handlers. An upstream connection or tunnel failure increments that proxy's health failure count. An upstream HTTP error status, client disconnect, or tunnel idle timeout does not mark that proxy unhealthy. The service keeps an upstream failure that occurs before idle expiration. After `HEALTH_FAILURE_THRESHOLD` consecutive upstream failures, the store marks the proxy unhealthy for `HEALTH_COOLDOWN_SECONDS`. A successful tunnel resets consecutive health failures.
 
 ## State
 

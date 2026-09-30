@@ -163,7 +163,7 @@ func (s *Server) Handle(ctx context.Context, conn net.Conn) {
 		}
 		slog.Warn("upstream handshake failed", "component", "proxy", "proxy_id", p.ProxyID)
 		s.record(*p, false, elapsed, 0, true)
-		if attempt == 1 || key == "" || ttl <= 0 || handshake.Err() != nil {
+		if attempt == 1 || handshake.Err() != nil {
 			_ = writeStatus(conn, http.StatusBadGateway)
 			return
 		}
@@ -220,7 +220,7 @@ func (s *Server) Handle(ctx context.Context, conn net.Conn) {
 		s.record(*p, false, elapsed, 0, true)
 		return
 	}
-	bytes, failed := tunnel(conn, upstream, clientReader, upstreamReader, s.Cfg.Proxy.BufferSize)
+	bytes, failed := tunnel(conn, upstream, clientReader, upstreamReader, s.Cfg.Proxy.BufferSize, time.Duration(s.Cfg.Proxy.IdleTimeout)*time.Second)
 	s.record(*p, !failed, elapsed, bytes, failed)
 	slog.Debug("tunnel closed", "component", "proxy", "proxy_id", p.ProxyID, "bytes", bytes, "upstream_failed", failed)
 }

@@ -25,6 +25,8 @@ Keep the SQLite directory writable only by the service account. The service rest
 
 Send `CONNECT example.com:443 HTTP/1.1` to the proxy. Add `X-Proxy-Affinity: session-key` to use the same healthy upstream on later requests. The service does not send this header to the upstream. `PROXY_AFFINITY_TTL=0` disables affinity.
 
+The service makes at most two upstream handshake attempts within `PROXY_CONNECT_TIMEOUT`. This limit applies with or without an affinity key. The service does not retry a valid upstream HTTP response or an established tunnel.
+
 To check sticky selection, start the proxy with `LOG_LEVEL=INFO STORE=redis make run/proxy`. Keep `PROXY_AFFINITY_TTL` above zero. Run these requests in another terminal:
 
 ```sh
@@ -55,6 +57,7 @@ The Makefile loads `.local_env` for `run/proxy`, `run/api`, `refresh`, and `refr
 - `LOG_LEVEL` sets the minimum log level. It defaults to `INFO`. Use `DEBUG`, `INFO`, `WARN`, or `ERROR`.
 - `PROXY_HOST` and `PROXY_PORT` set the CONNECT listener. They default to `127.0.0.1` and `8080`.
 - `PROXY_CONNECT_TIMEOUT` limits the handshake in seconds. It defaults to `30`.
+- `PROXY_IDLE_TIMEOUT` limits tunnel inactivity in seconds. It defaults to `300`. The value must be positive. Traffic in either direction resets the timeout. Expiration closes both sockets and releases the connection slot. It does not mark the upstream unhealthy. Use a larger value for clients that remain idle for more than five minutes.
 - `PROXY_BUFFER_SIZE` sets the tunnel copy buffer in bytes. It defaults to `16384`.
 - `PROXY_AFFINITY_TTL` sets the bind lifetime in seconds. It defaults to `1800`. Set it to `0` to disable affinity.
 - `PROXY_MAX_CONNECTIONS` sets the active connection limit per node. It defaults to `1024`.
@@ -105,6 +108,8 @@ make load REDIS_TEST_URL=redis://127.0.0.1:6379/14 LOAD_FLAGS='-concurrency 1000
 The load probe reads `REDIS_TEST_URL` from its environment. It does not accept a Redis URL flag. The Make target does not print the URL. For an authenticated local Redis, load the variable from a protected environment file. Do not put an authenticated URL in a Make command: shell history and process arguments can retain it.
 
 The probe prints attempts, successes, errors, average CONNECT latency, process RSS, file descriptors, goroutines, and Redis command count. Resource columns show baseline, observed peak, and post-shutdown values. The close mode can receive `503` when requests exceed the per-node active connection limit. A high attempt rate is not a successful CONNECT rate. The hold mode measures active tunnels, not sustained request throughput.
+
+The probe sets its tunnel idle timeout to at least 300 seconds. For longer runs, it sets the timeout above the requested duration so that idle expiration does not end a hold early.
 
 Local probe results on 2026-09-25: Linux 7.1.9 x86_64, eight logical CPUs, 62 GiB RAM, Go 1.27.0 development toolchain, Redis 8.10.1, and an open-file limit of 500000. The probe uses a local mock upstream and a new Redis database per run. The node limit equals the requested concurrency. RSS shows process memory in decimal MB. Each resource column shows baseline / observed peak / after tunnel shutdown.
 

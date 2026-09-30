@@ -109,7 +109,7 @@ func run(redisURL string, concurrency int, duration time.Duration, hold bool) er
 	}
 	serveCtx, cancel := context.WithCancel(context.Background())
 	stopped := make(chan error, 1)
-	server := &proxy.Server{Cfg: config.Settings{Proxy: config.ProxySettings{ConnectTimeout: 30, BufferSize: 16 << 10, MaxConnections: concurrency}, Health: config.HealthSettings{FailureThreshold: 3, CooldownSeconds: 300}}, Routes: config.Routes{Routes: []config.Route{{Pattern: "*", Providers: []string{"loadprobe"}, Strategy: config.RoundRobin}}}, Store: db}
+	server := &proxy.Server{Cfg: config.Settings{Proxy: config.ProxySettings{ConnectTimeout: 30, IdleTimeout: max(300, int(duration/time.Second)+1), BufferSize: 16 << 10, MaxConnections: concurrency}, Health: config.HealthSettings{FailureThreshold: 3, CooldownSeconds: 300}}, Routes: config.Routes{Routes: []config.Route{{Pattern: "*", Providers: []string{"loadprobe"}, Strategy: config.RoundRobin}}}, Store: db}
 	go func() { stopped <- server.Serve(serveCtx, listener) }()
 	address := listener.Addr().String()
 	baselineRSS, baselineFD, baselineGoroutines := metrics()

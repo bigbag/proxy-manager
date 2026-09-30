@@ -31,6 +31,7 @@ type ProxySettings struct {
 	Host           string
 	Port           int
 	ConnectTimeout int
+	IdleTimeout    int
 	BufferSize     int
 	AffinityTTL    int
 	MaxConnections int
@@ -99,6 +100,9 @@ func Load() (Settings, error) {
 	if s.Proxy.ConnectTimeout, err = envInt("PROXY_CONNECT_TIMEOUT", 30); err != nil {
 		return s, err
 	}
+	if s.Proxy.IdleTimeout, err = envInt("PROXY_IDLE_TIMEOUT", 300); err != nil {
+		return s, err
+	}
 	if s.Proxy.BufferSize, err = envInt("PROXY_BUFFER_SIZE", 16384); err != nil {
 		return s, err
 	}
@@ -133,6 +137,7 @@ func Load() (Settings, error) {
 		n    int
 	}{
 		{"PROXY_CONNECT_TIMEOUT", s.Proxy.ConnectTimeout}, {"PROXY_BUFFER_SIZE", s.Proxy.BufferSize},
+		{"PROXY_IDLE_TIMEOUT", s.Proxy.IdleTimeout},
 		{"PROXY_MAX_CONNECTIONS", s.Proxy.MaxConnections}, {"HEALTH_FAILURE_THRESHOLD", s.Health.FailureThreshold},
 		{"HEALTH_COOLDOWN_SECONDS", s.Health.CooldownSeconds},
 	} {

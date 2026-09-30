@@ -29,7 +29,7 @@ func testServer(t *testing.T, reply func(net.Conn)) *Server {
 	if err := db.Replace(context.Background(), p.Provider, []store.Proxy{p}); err != nil {
 		t.Fatal(err)
 	}
-	s := &Server{Cfg: config.Settings{Proxy: config.ProxySettings{ConnectTimeout: 1, BufferSize: 16384, MaxConnections: 10}}, Routes: config.Routes{Routes: []config.Route{{Pattern: "*", Providers: []string{"webshare"}, Strategy: config.RoundRobin}}}, Store: db}
+	s := &Server{Cfg: config.Settings{Proxy: config.ProxySettings{ConnectTimeout: 1, IdleTimeout: 30, BufferSize: 16384, MaxConnections: 10}}, Routes: config.Routes{Routes: []config.Route{{Pattern: "*", Providers: []string{"webshare"}, Strategy: config.RoundRobin}}}, Store: db}
 	s.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
 		a, b := net.Pipe()
 		go func() { defer b.Close(); reply(b) }()
